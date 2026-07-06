@@ -1,46 +1,70 @@
-// src/routes/AppRouter.jsx
-// Central routing configuration using react-router-dom v6
-
+/**
+ * AppRouter.jsx — Central route definitions with auth guards.
+ *
+ * Exports a named ProtectedRoute component for reuse in tests / other files.
+ */
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-// Pages (created as stubs for now, ready to be fully implemented)
-import LoginPage from "../pages/LoginPage";
-import RegisterPage from "../pages/RegisterPage";
-import DashboardPage from "../pages/DashboardPage";
-import PlayersPage from "../pages/PlayersPage";
-import TournamentsPage from "../pages/TournamentsPage";
+import LoginPage          from "../pages/LoginPage";
+import RegisterPage       from "../pages/RegisterPage";
+import DashboardPage      from "../pages/DashboardPage";
+import PlayersPage        from "../pages/PlayersPage";
+import TournamentsPage    from "../pages/TournamentsPage";
 import TournamentDetailPage from "../pages/TournamentDetailPage";
-import MatchesPage from "../pages/MatchesPage";
+import MatchesPage        from "../pages/MatchesPage";
 
-/** Redirects unauthenticated users to /login. */
-function PrivateRoute({ children }) {
-  const { user } = useAuth();
+// ─── Auth guards ──────────────────────────────────────────────────────────────
+
+/**
+ * ProtectedRoute — redirects to /login if the user is not authenticated.
+ * While the auth state is hydrating from localStorage, renders a full-screen
+ * loading indicator to avoid a flash of the login page.
+ */
+export function ProtectedRoute({ children }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return user ? children : <Navigate to="/login" replace />;
 }
 
-/** Redirects authenticated users away from auth pages. */
+/**
+ * GuestRoute — redirects authenticated users away from auth pages to "/".
+ */
 function GuestRoute({ children }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null; // brief blank during hydration is fine on auth pages
   return !user ? children : <Navigate to="/" replace />;
 }
+
+// ─── Router ───────────────────────────────────────────────────────────────────
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
+        {/* ── Public auth routes ── */}
         <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
 
-        {/* Protected */}
-        <Route path="/"                       element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-        <Route path="/players"                element={<PrivateRoute><PlayersPage /></PrivateRoute>} />
-        <Route path="/tournaments"            element={<PrivateRoute><TournamentsPage /></PrivateRoute>} />
-        <Route path="/tournaments/:id"        element={<PrivateRoute><TournamentDetailPage /></PrivateRoute>} />
-        <Route path="/matches"                element={<PrivateRoute><MatchesPage /></PrivateRoute>} />
+        {/* ── Protected application routes ── */}
+        <Route path="/"                element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/players"         element={<ProtectedRoute><PlayersPage /></ProtectedRoute>} />
+        <Route path="/tournaments"     element={<ProtectedRoute><TournamentsPage /></ProtectedRoute>} />
+        <Route path="/tournaments/:id" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
+        <Route path="/matches"         element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
 
-        {/* Fallback */}
+        {/* ── Catch-all ── */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

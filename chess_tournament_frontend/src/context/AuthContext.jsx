@@ -1,28 +1,59 @@
-// Auth context — stores JWT tokens and user info, exposes login/logout helpers
-import { createContext, useContext, useState, useCallback } from "react";
+/**
+ * AuthContext.jsx
+ *
+ * Provides:
+ *  - user: { id, username, email, role } | null
+ *  - isAdmin: boolean
+ *  - isLoading: boolean  (true while checking initial localStorage state)
+ *  - login(username, password) → Promise<user>
+ *  - register(data) → Promise<user>
+ *  - logout()
+ */
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import axiosClient from "../api/axiosClient";
+import { authAPI } from "../api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // initial hydration
+
+  // Hydrate from localStorage on first mount
+  useEffect(() => {
     try {
       const stored = localStorage.getItem("user");
-      return stored ? JSON.parse(stored) : null;
+      const token  = localStorage.getItem("access_token");
+      if (stored && token) {
+        setUser(JSON.parse(stored));
+      }
     } catch {
-      return null;
+      // corrupted storage — clear it
+      localStorage.removeItem("user");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+    } finally {
+      setIsLoading(false);
     }
-  });
+  }, []);
 
+  /** Authenticates and persists tokens + user info. */
   const login = useCallback(async (username, password) => {
     const { data } = await axiosClient.post("/auth/login/", { username, password });
-    localStorage.setItem("access_token", data.access);
+    localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   }, []);
 
+  /** Registers a new account (does NOT auto-login; redirect to /login). */
+  const register = useCallback(async (formData) => {
+    const { data } = await authAPI.register(formData);
+    return data;
+  }, []);
+
+  /** Clears all auth state and storage. */
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -31,7 +62,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === "admin" }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAdmin: user?.role === "admin",
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

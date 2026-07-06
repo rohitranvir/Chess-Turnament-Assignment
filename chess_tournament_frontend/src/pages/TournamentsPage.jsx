@@ -1,4 +1,12 @@
-// Stub page — full implementation in next sprint
+import Layout from "../components/Layout";
+
 export default function TournamentsPage() {
-  return <div className="p-8 text-white"><h1 className="text-2xl font-bold mb-4">🏆 Tournaments</h1><p className="text-slate-400">Tournament list coming soon...</p></div>;
+  return (
+    <Layout>
+      <h1 style={{ color: "#f1f5f9", fontSize: "1.75rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+        🏆 Tournaments
+      </h1>
+      <p style={{ color: "#64748b" }}>Tournament management UI — coming in the next sprint.</p>
+    </Layout>
+  );
 }

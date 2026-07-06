@@ -1,4 +1,14 @@
-// Stub page — full implementation in next sprint
+import { useParams } from "react-router-dom";
+import Layout from "../components/Layout";
+
 export default function TournamentDetailPage() {
-  return <div className="p-8 text-white"><h1 className="text-2xl font-bold mb-4">🏆 Tournament Detail</h1><p className="text-slate-400">Tournament detail coming soon...</p></div>;
+  const { id } = useParams();
+  return (
+    <Layout>
+      <h1 style={{ color: "#f1f5f9", fontSize: "1.75rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+        🏆 Tournament #{id}
+      </h1>
+      <p style={{ color: "#64748b" }}>Tournament detail view — coming in the next sprint.</p>
+    </Layout>
+  );
 }
