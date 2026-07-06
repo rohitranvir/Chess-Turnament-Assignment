@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # Local
     "players",
     "tournaments",
+    "matches",
 ]
 
 MIDDLEWARE = [

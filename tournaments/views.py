@@ -13,6 +13,7 @@ from .serializers import (
     AddPlayerSerializer,
     RemovePlayerSerializer,
 )
+# matches services imported lazily inside actions to avoid circular imports
 
 
 class TournamentViewSet(viewsets.ModelViewSet):
@@ -144,4 +145,121 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 "player_count": entries.count(),
                 "players": serializer.data,
             }
+        )
+
+    # ------------------------------------------------------------------
+    # Custom action: generate_matches
+    # ------------------------------------------------------------------
+
+    @action(detail=True, methods=["post"], url_path="generate_matches")
+    def generate_matches(self, request, pk=None):
+        """
+        POST /api/tournaments/{id}/generate_matches/
+        Body: { "round_number": <int> }
+
+        Shuffles enrolled players and creates paired Match records for
+        the given round. Odd count → last player receives a BYE (+3 pts).
+        """
+        from matches.services import generate_random_matches
+        from matches.serializers import MatchSerializer
+
+        tournament = self.get_object()
+
+        round_number = request.data.get("round_number")
+        if round_number is None:
+            return Response(
+                {"error": "'round_number' is required in the request body."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            round_number = int(round_number)
+            if round_number < 1:
+                raise ValueError
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "'round_number' must be a positive integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            matches = generate_random_matches(tournament.pk, round_number)
+        except ValueError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        bye_count = sum(1 for m in matches if m.is_bye)
+        return Response(
+            {
+                "message": (
+                    f"Generated {len(matches)} match(es) for round {round_number} "
+                    f"in '{tournament.name}' ({bye_count} bye(s))."
+                ),
+                "round_number": round_number,
+                "match_count": len(matches),
+                "bye_count": bye_count,
+                "matches": MatchSerializer(matches, many=True).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    # ------------------------------------------------------------------
+    # Custom action: simulate_round
+    # ------------------------------------------------------------------
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"simulate_round/(?P<round_number>[0-9]+)",
+    )
+    def simulate_round(self, request, pk=None, round_number=None):
+        """
+        POST /api/tournaments/{id}/simulate_round/{round_number}/
+
+        Simulates ALL pending (non-bye) matches in the given round.
+        Skips already-decided matches silently.
+        """
+        from matches.models import Match
+        from matches.serializers import MatchSerializer
+        from matches.services import simulate_match_result
+
+        tournament = self.get_object()
+        round_number = int(round_number)
+
+        pending_matches = Match.objects.filter(
+            tournament=tournament,
+            round_number=round_number,
+            result=Match.Result.PENDING,
+            player_black__isnull=False,   # exclude byes
+        )
+
+        if not pending_matches.exists():
+            return Response(
+                {
+                    "message": (
+                        f"No pending matches found for round {round_number} "
+                        f"in '{tournament.name}'."
+                    )
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        simulated = []
+        errors = []
+        for match in pending_matches:
+            try:
+                updated = simulate_match_result(match.pk)
+                simulated.append(updated)
+            except (ValueError, RuntimeError) as exc:
+                errors.append({"match_id": match.pk, "error": str(exc)})
+
+        return Response(
+            {
+                "message": (
+                    f"Simulated {len(simulated)} match(es) in round {round_number} "
+                    f"of '{tournament.name}'."
+                ),
+                "simulated_count": len(simulated),
+                "errors": errors,
+                "matches": MatchSerializer(simulated, many=True).data,
+            },
+            status=status.HTTP_200_OK,
         )
