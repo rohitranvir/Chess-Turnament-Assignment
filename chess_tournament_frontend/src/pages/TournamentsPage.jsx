@@ -4,6 +4,8 @@ import Layout from "../components/Layout";
 import Modal from "../components/Modal";
 import { tournamentsAPI } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
+import Spinner from "../components/Spinner";
 
 export default function TournamentsPage() {
   const { isAdmin } = useAuth();
@@ -85,19 +87,21 @@ export default function TournamentsPage() {
     try {
       if (currentEditing) {
         await tournamentsAPI.update(currentEditing.id, form);
+        toast.success("Tournament updated successfully");
       } else {
         await tournamentsAPI.create(form);
+        toast.success("Tournament created successfully");
       }
       setModalOpen(false);
       fetchTournaments();
     } catch (err) {
       const data = err?.response?.data;
       if (data?.error?.details) {
-        setFormError(Object.values(data.error.details).flat().join(" "));
+        toast.error(Object.values(data.error.details).flat().join(" "));
       } else if (data?.error?.message) {
-        setFormError(data.error.message);
+        toast.error(data.error.message);
       } else {
-        setFormError("An unexpected error occurred.");
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setFormLoading(false);
@@ -113,10 +117,11 @@ export default function TournamentsPage() {
     if (!tournamentToDelete) return;
     try {
       await tournamentsAPI.remove(tournamentToDelete.id);
+      toast.success("Tournament deleted successfully");
       setDeleteModalOpen(false);
       fetchTournaments();
     } catch (err) {
-      alert("Failed to delete tournament.");
+      toast.error("Failed to delete tournament.");
     }
   };
 
@@ -152,7 +157,7 @@ export default function TournamentsPage() {
       </div>
 
       {loading ? (
-        <div style={styles.centerBox}>Loading tournaments...</div>
+        <Spinner fullPage />
       ) : error ? (
         <div style={styles.errorBox}>{error}</div>
       ) : (

@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import { tournamentsAPI, playersAPI, matchesAPI } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
+import Spinner from "../components/Spinner";
 
 // Helper components for the page
 const SectionCard = ({ title, children, actions }) => (
@@ -84,25 +86,25 @@ export default function TournamentDetailPage() {
   // Handle Add Player
   const handleAddPlayer = async () => {
     if (!selectedPlayerToAdd) return;
-    setActionError("");
     try {
       await tournamentsAPI.addPlayer(id, selectedPlayerToAdd);
+      toast.success("Player added to tournament");
       setSelectedPlayerToAdd("");
-      loadData(); // reload everything to update players and potentially rankings
+      loadData();
     } catch (err) {
-      setActionError(err.response?.data?.error?.message || "Failed to add player.");
+      toast.error(err.response?.data?.error?.message || "Failed to add player.");
     }
   };
 
   // Handle Remove Player
   const handleRemovePlayer = async (playerId) => {
     if (!window.confirm("Remove this player from the tournament?")) return;
-    setActionError("");
     try {
       await tournamentsAPI.removePlayer(id, playerId);
+      toast.success("Player removed from tournament");
       loadData();
     } catch (err) {
-      setActionError(err.response?.data?.error?.message || "Failed to remove player.");
+      toast.error(err.response?.data?.error?.message || "Failed to remove player.");
     }
   };
 
@@ -110,30 +112,30 @@ export default function TournamentDetailPage() {
   const handleGenerateMatches = async (e) => {
     e.preventDefault();
     if (!roundToGenerate) return;
-    setActionError("");
     try {
       await tournamentsAPI.generateMatches(id, parseInt(roundToGenerate));
+      toast.success(`Matches generated for Round ${roundToGenerate}`);
       setRoundToGenerate("");
       loadData();
     } catch (err) {
-      setActionError(err.response?.data?.error?.message || "Failed to generate matches.");
+      toast.error(err.response?.data?.error?.message || "Failed to generate matches.");
     }
   };
 
   // Handle Simulate Round
   const handleSimulateRound = async (roundNum) => {
     if (!window.confirm(`Simulate all pending matches in Round ${roundNum}?`)) return;
-    setActionError("");
     try {
       await tournamentsAPI.simulateRound(id, roundNum);
+      toast.success(`Round ${roundNum} simulated`);
       loadData();
     } catch (err) {
-      setActionError(err.response?.data?.error?.message || "Failed to simulate round.");
+      toast.error(err.response?.data?.error?.message || "Failed to simulate round.");
     }
   };
 
   if (loading) {
-    return <Layout><div style={styles.centerBox}>Loading tournament details...</div></Layout>;
+    return <Layout><Spinner fullPage /></Layout>;
   }
 
   if (error || !tournament) {
@@ -165,8 +167,6 @@ export default function TournamentDetailPage() {
           <StatusBadge status={tournament.status} />
         </div>
       </div>
-
-      {actionError && <div style={styles.errorBanner}>{actionError}</div>}
 
       <div style={styles.grid}>
         {/* Left Column: Players & Rankings */}

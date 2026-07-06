@@ -3,6 +3,8 @@ import Layout from "../components/Layout";
 import Modal from "../components/Modal";
 import { playersAPI } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
+import Spinner from "../components/Spinner";
 
 export default function PlayersPage() {
   const { isAdmin } = useAuth();
@@ -83,19 +85,21 @@ export default function PlayersPage() {
     try {
       if (currentEditing) {
         await playersAPI.update(currentEditing.id, form);
+        toast.success("Player updated successfully");
       } else {
         await playersAPI.create(form);
+        toast.success("Player created successfully");
       }
       setModalOpen(false);
       fetchPlayers();
     } catch (err) {
       const data = err?.response?.data;
       if (data?.error?.details) {
-        setFormError(Object.values(data.error.details).flat().join(" "));
+        toast.error(Object.values(data.error.details).flat().join(" "));
       } else if (data?.error?.message) {
-        setFormError(data.error.message);
+        toast.error(data.error.message);
       } else {
-        setFormError("An unexpected error occurred.");
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setFormLoading(false);
@@ -111,10 +115,11 @@ export default function PlayersPage() {
     if (!playerToDelete) return;
     try {
       await playersAPI.remove(playerToDelete.id);
+      toast.success("Player deleted successfully");
       setDeleteModalOpen(false);
       fetchPlayers();
     } catch (err) {
-      alert("Failed to delete player.");
+      toast.error("Failed to delete player.");
     }
   };
 
@@ -133,7 +138,7 @@ export default function PlayersPage() {
       </div>
 
       {loading ? (
-        <div style={styles.centerBox}>Loading players...</div>
+        <Spinner fullPage />
       ) : error ? (
         <div style={styles.errorBox}>{error}</div>
       ) : (
@@ -184,23 +189,23 @@ export default function PlayersPage() {
           {formError && <div style={styles.formError}>{formError}</div>}
           
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Name</label>
-            <input name="name" value={form.name} onChange={handleFormChange} style={styles.input} required />
+            <label htmlFor="playerName" style={styles.label}>Name</label>
+            <input id="playerName" name="name" value={form.name} onChange={handleFormChange} style={styles.input} required />
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input type="email" name="email" value={form.email} onChange={handleFormChange} style={styles.input} required />
+            <label htmlFor="playerEmail" style={styles.label}>Email</label>
+            <input id="playerEmail" type="email" name="email" value={form.email} onChange={handleFormChange} style={styles.input} required />
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Rating</label>
-            <input type="number" name="rating" value={form.rating} onChange={handleFormChange} style={styles.input} min="0" required />
+            <label htmlFor="playerRating" style={styles.label}>Rating</label>
+            <input id="playerRating" type="number" name="rating" value={form.rating} onChange={handleFormChange} style={styles.input} min="0" required />
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Country</label>
-            <input name="country" value={form.country} onChange={handleFormChange} style={styles.input} placeholder="e.g. USA" />
+            <label htmlFor="playerCountry" style={styles.label}>Country</label>
+            <input id="playerCountry" name="country" value={form.country} onChange={handleFormChange} style={styles.input} placeholder="e.g. USA" />
           </div>
 
           <div style={styles.modalActions}>
