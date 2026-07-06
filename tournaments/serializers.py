@@ -60,7 +60,15 @@ class TournamentSerializer(serializers.ModelSerializer):
     # ------------------------------------------------------------------
 
     def validate(self, attrs):
-        """Ensure end_date is strictly after start_date."""
+        """Ensure end_date is strictly after start_date, and prevent editing completed tournaments."""
+        if self.instance and self.instance.status == Tournament.Status.COMPLETED:
+            # Only allow status change from completed if they're reverting it (rare), 
+            # otherwise block edits on completed tournaments.
+            if attrs.get("status") not in (None, Tournament.Status.COMPLETED):
+                pass # Allow reverting status
+            else:
+                raise serializers.ValidationError("Cannot edit a completed tournament.")
+
         start = attrs.get("start_date") or getattr(self.instance, "start_date", None)
         end = attrs.get("end_date") or getattr(self.instance, "end_date", None)
 

@@ -67,9 +67,11 @@ class MatchViewSet(
         try:
             match = simulate_match_result(int(pk))
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            from rest_framework.exceptions import NotFound
+            raise NotFound(str(e))
         except RuntimeError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(str(e))
 
         return Response(
             {

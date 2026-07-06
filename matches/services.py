@@ -68,6 +68,9 @@ def generate_random_matches(tournament_id: int, round_number: int) -> list[Match
     except Tournament.DoesNotExist:
         raise ValueError(f"Tournament with id={tournament_id} does not exist.")
 
+    if Match.objects.filter(tournament=tournament, round_number=round_number).exists():
+        raise ValueError(f"Matches for round {round_number} have already been generated in this tournament.")
+
     entries = list(
         TournamentPlayer.objects.filter(tournament=tournament)
         .select_related("player")

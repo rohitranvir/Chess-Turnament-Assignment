@@ -1,7 +1,7 @@
 """Tournament views — full CRUD + custom player-management actions."""
 
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -44,10 +44,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
 
         # Reject additions to a completed tournament
         if tournament.status == Tournament.Status.COMPLETED:
-            return Response(
-                {"error": "Cannot add players to a completed tournament."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise serializers.ValidationError("Cannot add players to a completed tournament.")
 
         serializer = AddPlayerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -58,14 +55,8 @@ class TournamentViewSet(viewsets.ModelViewSet):
 
         # Reject duplicate registrations
         if TournamentPlayer.objects.filter(tournament=tournament, player=player).exists():
-            return Response(
-                {
-                    "error": (
-                        f"Player '{player.name}' is already registered "
-                        f"in '{tournament.name}'."
-                    )
-                },
-                status=status.HTTP_409_CONFLICT,
+            raise serializers.ValidationError(
+                f"Player '{player.name}' is already registered in '{tournament.name}'."
             )
 
         tp = TournamentPlayer.objects.create(
@@ -93,6 +84,9 @@ class TournamentViewSet(viewsets.ModelViewSet):
         """
         tournament = self.get_object()
 
+        if tournament.status == Tournament.Status.COMPLETED:
+            raise serializers.ValidationError("Cannot remove players from a completed tournament.")
+
         serializer = RemovePlayerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -104,14 +98,9 @@ class TournamentViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not tp:
-            return Response(
-                {
-                    "error": (
-                        f"Player '{player.name}' is not registered "
-                        f"in '{tournament.name}'."
-                    )
-                },
-                status=status.HTTP_404_NOT_FOUND,
+            from rest_framework.exceptions import NotFound
+            raise NotFound(
+                f"Player '{player.name}' is not registered in '{tournament.name}'."
             )
 
         tp.delete()
@@ -169,24 +158,18 @@ class TournamentViewSet(viewsets.ModelViewSet):
 
         round_number = request.data.get("round_number")
         if round_number is None:
-            return Response(
-                {"error": "'round_number' is required in the request body."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise serializers.ValidationError("'round_number' is required in the request body.")
         try:
             round_number = int(round_number)
             if round_number < 1:
                 raise ValueError
         except (ValueError, TypeError):
-            return Response(
-                {"error": "'round_number' must be a positive integer."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise serializers.ValidationError("'round_number' must be a positive integer.")
 
         try:
             matches = generate_random_matches(tournament.pk, round_number)
         except ValueError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError(str(exc))
 
         bye_count = sum(1 for m in matches if m.is_bye)
         return Response(
