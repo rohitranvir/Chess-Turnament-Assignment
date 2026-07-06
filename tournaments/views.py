@@ -29,6 +29,8 @@ class TournamentViewSet(viewsets.ModelViewSet):
     queryset = Tournament.objects.all()
     serializer_class = TournamentSerializer
     permission_classes = [IsAuthenticatedReadOnly]
+    filterset_fields = ["status"]
+    search_fields = ["name"]
 
     # ------------------------------------------------------------------
     # Custom action: add_player

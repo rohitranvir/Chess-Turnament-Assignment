@@ -19,7 +19,7 @@ class PlayerTests(APITestCase):
         self.client.force_authenticate(user=self.viewer_user)
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_create_player_admin(self):
         self.client.force_authenticate(user=self.admin_user)

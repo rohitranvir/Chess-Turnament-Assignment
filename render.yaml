@@ -1,0 +1,24 @@
+databases:
+  - name: chess-tournament-db
+    databaseName: chess_db
+    user: chess_user
+    plan: free
+
+services:
+  - type: web
+    name: chess-tournament-api
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn chess_tournament_backend.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chess-tournament-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "chess-tournament-api.onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://chess-tournament-frontend.vercel.app" # Placeholder for live frontend

@@ -38,21 +38,7 @@ class MatchViewSet(
             return MatchUpdateSerializer
         return MatchSerializer
 
-    # ------------------------------------------------------------------
-    # Filtering via query params
-    # ------------------------------------------------------------------
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        tournament_id = self.request.query_params.get("tournament_id")
-        round_number = self.request.query_params.get("round_number")
-
-        if tournament_id:
-            qs = qs.filter(tournament_id=tournament_id)
-        if round_number:
-            qs = qs.filter(round_number=round_number)
-
-        return qs
+    filterset_fields = ["tournament", "tournament_id", "round_number"]
 
     # ------------------------------------------------------------------
     # Custom action: simulate a single match

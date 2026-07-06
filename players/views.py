@@ -24,16 +24,8 @@ class PlayerViewSet(viewsets.ModelViewSet):
     serializer_class = PlayerSerializer
     permission_classes = [IsAuthenticatedReadOnly]
 
-    def get_queryset(self):
-        """Allow optional filtering by country and/or name via query params."""
-        qs = super().get_queryset()
-        country = self.request.query_params.get("country")
-        name = self.request.query_params.get("name")
-        if country:
-            qs = qs.filter(country__icontains=country)
-        if name:
-            qs = qs.filter(name__icontains=name)
-        return qs
+    filterset_fields = ["country"]
+    search_fields = ["name", "email"]
 
     def destroy(self, request, *args, **kwargs):
         """Return a JSON message on successful delete."""
