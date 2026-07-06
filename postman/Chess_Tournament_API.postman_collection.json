@@ -1,0 +1,392 @@
+{
+  "info": {
+    "_postman_id": "chess-tournament-api-v1",
+    "name": "Chess Tournament API",
+    "description": "Complete API collection for the Chess Tournament Management System.\n\nSetup:\n1. Import the companion Environment file (Chess_Tournament_API.postman_environment.json).\n2. Set `base_url` to `http://localhost:8000`.\n3. Register a user at POST /api/auth/register/, then login. The Login request auto-saves `access_token` and `refresh_token` to the environment.\n4. All protected requests use Bearer `{{access_token}}` automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",      "value": "http://localhost:8000", "type": "string" },
+    { "key": "access_token",  "value": "",                      "type": "string" },
+    { "key": "refresh_token", "value": "",                      "type": "string" },
+    { "key": "player_id",     "value": "1",                     "type": "string" },
+    { "key": "tournament_id", "value": "1",                     "type": "string" },
+    { "key": "match_id",      "value": "1",                     "type": "string" },
+    { "key": "round_number",  "value": "1",                     "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "JWT authentication endpoints — register, login, and refresh.",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin1\",\n  \"email\": \"admin1@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"password2\": \"SecurePass123!\",\n  \"role\": \"admin\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/auth/register/", "host": ["{{base_url}}"], "path": ["api", "auth", "register", ""] }
+          }
+        },
+        {
+          "name": "Login (get tokens)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access) {",
+                  "  pm.collectionVariables.set('access_token', json.access);",
+                  "  pm.collectionVariables.set('refresh_token', json.refresh);",
+                  "  console.log('Tokens saved to collection variables');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin1\",\n  \"password\": \"SecurePass123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login/", "host": ["{{base_url}}"], "path": ["api", "auth", "login", ""] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.access) {",
+                  "  pm.collectionVariables.set('access_token', json.access);",
+                  "  console.log('Access token refreshed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/auth/refresh/", "host": ["{{base_url}}"], "path": ["api", "auth", "refresh", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "description": "Full CRUD for player profiles. Write operations require admin role.",
+      "item": [
+        {
+          "name": "List Players",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/players/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "players", ""],
+              "query": [
+                { "key": "country", "value": "India", "disabled": true },
+                { "key": "name",    "value": "Magnus", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('player_id', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Magnus Carlsen\",\n  \"email\": \"magnus@chess.com\",\n  \"rating\": 2882,\n  \"country\": \"Norway\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/players/", "host": ["{{base_url}}"], "path": ["api", "players", ""] }
+          }
+        },
+        {
+          "name": "Get Player by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/players/{{player_id}}/", "host": ["{{base_url}}"], "path": ["api", "players", "{{player_id}}", ""] }
+          }
+        },
+        {
+          "name": "Update Player (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Magnus Carlsen\",\n  \"email\": \"magnus@chess.com\",\n  \"rating\": 2900,\n  \"country\": \"Norway\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/players/{{player_id}}/", "host": ["{{base_url}}"], "path": ["api", "players", "{{player_id}}", ""] }
+          }
+        },
+        {
+          "name": "Partial Update Player (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 2895\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/players/{{player_id}}/", "host": ["{{base_url}}"], "path": ["api", "players", "{{player_id}}", ""] }
+          }
+        },
+        {
+          "name": "Delete Player",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/players/{{player_id}}/", "host": ["{{base_url}}"], "path": ["api", "players", "{{player_id}}", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tournaments",
+      "description": "Full CRUD for tournament management. Write operations require admin role.",
+      "item": [
+        {
+          "name": "List Tournaments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tournaments/", "host": ["{{base_url}}"], "path": ["api", "tournaments", ""] }
+          }
+        },
+        {
+          "name": "Create Tournament",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('tournament_id', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"World Open Championship 2025\",\n  \"start_date\": \"2025-08-01\",\n  \"end_date\": \"2025-08-10\",\n  \"status\": \"upcoming\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/", "host": ["{{base_url}}"], "path": ["api", "tournaments", ""] }
+          }
+        },
+        {
+          "name": "Get Tournament by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", ""] }
+          }
+        },
+        {
+          "name": "Update Tournament (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"World Open Championship 2025 - Updated\",\n  \"start_date\": \"2025-08-01\",\n  \"end_date\": \"2025-08-15\",\n  \"status\": \"ongoing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", ""] }
+          }
+        },
+        {
+          "name": "Partial Update Tournament (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ongoing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", ""] }
+          }
+        },
+        {
+          "name": "Delete Tournament",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tournament — Player Management",
+      "description": "Add/remove players, list enrolled players in a tournament.",
+      "item": [
+        {
+          "name": "Add Player to Tournament",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"player_id\": {{player_id}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/add_player/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "add_player", ""] }
+          }
+        },
+        {
+          "name": "Remove Player from Tournament",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"player_id\": {{player_id}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/remove_player/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "remove_player", ""] }
+          }
+        },
+        {
+          "name": "List Players in Tournament",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/players/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "players", ""] }
+          }
+        },
+        {
+          "name": "Get Tournament Rankings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/rankings/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "rankings", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matches",
+      "description": "Match generation, simulation, and listing endpoints.",
+      "item": [
+        {
+          "name": "List Matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/matches/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matches", ""],
+              "query": [
+                { "key": "tournament", "value": "{{tournament_id}}", "disabled": true },
+                { "key": "round_number", "value": "1",               "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Match by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/matches/{{match_id}}/", "host": ["{{base_url}}"], "path": ["api", "matches", "{{match_id}}", ""] }
+          }
+        },
+        {
+          "name": "Generate Matches for Round",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.matches && json.matches.length > 0) {",
+                  "  pm.collectionVariables.set('match_id', json.matches[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"round_number\": {{round_number}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/generate_matches/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "generate_matches", ""] }
+          }
+        },
+        {
+          "name": "Simulate Single Match",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": { "raw": "{{base_url}}/api/matches/{{match_id}}/simulate/", "host": ["{{base_url}}"], "path": ["api", "matches", "{{match_id}}", "simulate", ""] }
+          }
+        },
+        {
+          "name": "Simulate Entire Round",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": { "mode": "raw", "raw": "" },
+            "url": { "raw": "{{base_url}}/api/tournaments/{{tournament_id}}/simulate_round/{{round_number}}/", "host": ["{{base_url}}"], "path": ["api", "tournaments", "{{tournament_id}}", "simulate_round", "{{round_number}}", ""] }
+          }
+        }
+      ]
+    }
+  ]
+}
