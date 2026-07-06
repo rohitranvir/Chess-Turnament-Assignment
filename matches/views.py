@@ -4,6 +4,7 @@ from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from common.permissions import IsAuthenticatedReadOnly
 from .models import Match
 from .serializers import MatchSerializer, MatchUpdateSerializer
 from .services import simulate_match_result
@@ -30,6 +31,7 @@ class MatchViewSet(
     queryset = Match.objects.select_related(
         "tournament", "player_white", "player_black", "winner"
     ).all()
+    permission_classes = [IsAuthenticatedReadOnly]
 
     def get_serializer_class(self):
         if self.action in ("update", "partial_update"):

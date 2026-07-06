@@ -5,6 +5,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from common.permissions import IsAuthenticatedReadOnly
 from players.models import Player
 from .models import Tournament, TournamentPlayer
 from .serializers import (
@@ -27,6 +28,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
 
     queryset = Tournament.objects.all()
     serializer_class = TournamentSerializer
+    permission_classes = [IsAuthenticatedReadOnly]
 
     # ------------------------------------------------------------------
     # Custom action: add_player

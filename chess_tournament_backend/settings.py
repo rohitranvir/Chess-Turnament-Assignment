@@ -4,6 +4,7 @@ Loads sensitive config from .env via python-decouple.
 """
 
 from pathlib import Path
+from datetime import timedelta
 from decouple import config, Csv
 
 # ---------------------------------------------------------------------------
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     # Local
+    "users",
     "players",
     "tournaments",
     "matches",
@@ -80,6 +82,11 @@ DATABASES = {
 }
 
 # ---------------------------------------------------------------------------
+# Custom User model
+# ---------------------------------------------------------------------------
+AUTH_USER_MODEL = "users.User"
+
+# ---------------------------------------------------------------------------
 # Password validation
 # ---------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
@@ -118,6 +125,12 @@ CORS_ALLOWED_ORIGINS = [
 # Django REST Framework
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "common.permissions.IsAuthenticatedReadOnly",
+    ],
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
@@ -127,4 +140,18 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+}
+
+# ---------------------------------------------------------------------------
+# Simple JWT configuration
+# ---------------------------------------------------------------------------
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
 }

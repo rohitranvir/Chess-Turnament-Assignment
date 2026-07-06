@@ -3,6 +3,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
+from common.permissions import IsAuthenticatedReadOnly
 from .models import Player
 from .serializers import PlayerSerializer
 
@@ -21,6 +22,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
 
     queryset = Player.objects.all()
     serializer_class = PlayerSerializer
+    permission_classes = [IsAuthenticatedReadOnly]
 
     def get_queryset(self):
         """Allow optional filtering by country and/or name via query params."""
