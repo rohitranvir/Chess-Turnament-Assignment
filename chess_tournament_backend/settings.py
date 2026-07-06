@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "corsheaders",
     # Local
     "players",
+    "tournaments",
 ]
 
 MIDDLEWARE = [
